@@ -11,6 +11,12 @@ Deploy vless proxy server on cloudfalre pages.dev.
 
 Usage: rename `worker-vless.js` to `_worker.js` and upload to your pages.dev
 
+## worker-vless-sub
+
+Deploy vless proxy server with subscribe link on cloudfalre pages.dev.
+
+Usage: rename `worker-vless-sub.js` to `_worker.js` and upload to your pages.dev
+
 ## worker-proxy
 
 Proxy your traffic to target host via pages.dev
