@@ -12,6 +12,9 @@ let proxyIP = proxyIPs[Math.floor(Math.random() * proxyIPs.length)];
 
 let dohURL = 'https://cloudflare-dns.com/dns-query'; //  https://dns.google/dns-query
 
+const cloudflareIPs = ['cdn.jsbang.top','cdn.didi8.com','opop.200307.xyz','cn.king361.link','443.cf.bestl.de','cfip.gay','ff.yydsb.link',
+                       'cdn.anycast.eu.org', 'cdn-all.xn--b6gac.eu.org', 'cdn.xn--b6gac.eu.org', 'cdn-b100.xn--b6gac.eu.org'];
+
 // v2board api environment variables (optional) deprecated, please use planetscale.com instead
 
 if (!isValidUUID(userID)) {
@@ -803,7 +806,7 @@ function createVLESSSub(userID_Path, hostName) {
 				const vlessMainHttp = `vless://${userID}@${hostName}${commonUrlPart_http}`;
                 output.push(`${vlessMainHttp}`);
 				// For each proxy IP, generate a VLESS configuration and add to output
-				proxyIPs.forEach((proxyIP) => {
+				cloudflareIPs.forEach((proxyIP) => {
 					const vlessSecHttp = `vless://${userID}@${proxyIP}:${port}?encryption=none&security=none&fp=random&type=ws&host=${hostName}&path=%2F%3Fed%3D2048#HTTP-${proxyIP}-${port}`;
 					output.push(`${vlessSecHttp}`);
 				});
@@ -815,7 +818,7 @@ function createVLESSSub(userID_Path, hostName) {
 			const vlessMainHttps = `vless://${userID}@${hostName}${commonUrlPart_https}`;
             output.push(`${vlessMainHttps}`);
 			// For each proxy IP, generate a VLESS configuration and add to output
-			proxyIPs.forEach((proxyIP) => {
+			cloudflareIPs.forEach((proxyIP) => {
 				const vlessSecHttps = `vless://${userID}@${proxyIP}:${port}?encryption=none&security=tls&sni=${hostName}&fp=random&type=ws&host=${hostName}&path=%2F%3Fed%3D2048#HTTPS-${proxyIP}-${port}`;
 				output.push(`${vlessSecHttps}`);
 			});
