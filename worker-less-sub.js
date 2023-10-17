@@ -1,21 +1,15 @@
-// <!--GAMFC-->version base on commit 43fad05dcdae3b723c53c226f8181fc5bd47223e, time is 2023-06-22 15:20:02 UTC<!--GAMFC-END-->.
-// @ts-ignore
 import { connect } from 'cloudflare:sockets';
 
 // How to generate your own UUID:
 // [Windows] Press "Win + R", input cmd and run:  Powershell -NoExit -Command "[guid]::NewGuid()"
 let userID = 'a6a45391-31fe-4bdd-828c-51f02c943dce';
 
-const proxyIPs = ['cdn-all.xn--b6gac.eu.org', 'cdn.xn--b6gac.eu.org', 'cdn-b100.xn--b6gac.eu.org', 'edgetunnel.anycast.eu.org', 'cdn.anycast.eu.org'];
+let proxyIP = 'edgetunnel.anycast.eu.org';
 
-let proxyIP = proxyIPs[Math.floor(Math.random() * proxyIPs.length)];
+let dohURL = 'https://cloudflare-dns.com/dns-query'; // or https://dns.google/dns-query
 
-let dohURL = 'https://cloudflare-dns.com/dns-query'; //  https://dns.google/dns-query
-
-const cloudflareIPs = ['cdn.jsbang.top','cdn.didi8.com','opop.200307.xyz','cn.king361.link','443.cf.bestl.de','cfip.gay','ff.yydsb.link',
+let cloudflareIPs = ['cdn.jsbang.top','cdn.didi8.com','opop.200307.xyz','cn.king361.link','443.cf.bestl.de','cfip.gay','ff.yydsb.link',
                        'cdn.anycast.eu.org', 'cdn-all.xn--b6gac.eu.org', 'cdn.xn--b6gac.eu.org', 'cdn-b100.xn--b6gac.eu.org'];
-
-// v2board api environment variables (optional) deprecated, please use planetscale.com instead
 
 if (!isValidUUID(userID)) {
 	throw new Error('uuid is invalid');
@@ -34,9 +28,6 @@ export default {
 			userID = env.UUID || userID;
 			proxyIP = env.PROXYIP || proxyIP;
 			dohURL = env.DNS_RESOLVER_URL || dohURL;
-			// nodeId = env.NODE_ID || nodeId;
-			// apiToken = env.API_TOKEN || apiToken;
-			// apiHost = env.API_HOST || apiHost;
 			let userID_Path = userID;
 			if (userID.includes(',')) {
 				userID_Path = userID.split(',')[0];
@@ -687,13 +678,8 @@ function getVLESSConfig(userIDs, hostName) {
 	let output = [];
 	let header = [];
 	const clash_link = `https://subconverter.do.xn--b6gac.eu.org/sub?target=clash&url=https://${hostName}/sub/${userIDArray[0]}?format=clash&insert=false&emoji=true&list=false&tfo=false&scv=true&fdn=false&sort=false&new_name=true`;
-	header.push(`\n<p align="center"><img src="https://cloudflare-ipfs.com/ipfs/bafybeigd6i5aavwpr6wvnwuyayklq3omonggta4x2q7kpmgafj357nkcky" alt="图片描述" style="margin-bottom: -50px;">`);
-	header.push(`\n<b style=" font-size: 15px;" >Welcome! This function generates configuration for VLESS protocol. If you found this useful, please check our GitHub project for more:</b>\n`);
-	header.push(`<b style=" font-size: 15px;" >欢迎！这是生成 VLESS 协议的配置。如果您发现这个项目很好用，请查看我们的 GitHub 项目给我一个star：</b>\n`);
-	header.push(`\n<a href="https://github.com/3Kmfi6HP/EDtunnel" target="_blank">EDtunnel - https://github.com/3Kmfi6HP/EDtunnel</a>\n`);
-	header.push(`\n<iframe src="https://ghbtns.com/github-btn.html?user=USERNAME&repo=REPOSITORY&type=star&count=true&size=large" frameborder="0" scrolling="0" width="170" height="30" title="GitHub"></iframe>\n\n`.replace(/USERNAME/g, "3Kmfi6HP").replace(/REPOSITORY/g, "EDtunnel"));
-	header.push(`<a href="//${hostName}/sub/${userIDArray[0]}" target="_blank">VLESS 节点订阅连接</a>\n<a href="clash://install-config?url=${encodeURIComponent(clash_link)}" target="_blank">Clash 节点订阅连接</a>\n<a href="${clash_link}" target="_blank">Clash 节点订阅连接2</a></p>\n`);
-	header.push(``);
+	header.push(`\n<p align="center"><img src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(`vless://${userIDs.split(',')[0]}@${hostName}${commonUrlPart}`)}" alt="vless链接" style="margin-bottom: -50px;"></p>\n\n`);
+	header.push(`<p align="center"><a href="//${hostName}/sub/${userIDArray[0]}" target="_blank">VLESS 节点订阅连接</a>\n\n<a href="clash://install-config?url=${encodeURIComponent(clash_link)}" target="_blank">Clash 节点订阅连接</a>\n\n<a href="${clash_link}" target="_blank">Clash 节点订阅连接2</a></p>\n`);
 
 	// Generate output string for each userID
 	userIDArray.forEach((userID) => {
@@ -708,23 +694,7 @@ function getVLESSConfig(userIDs, hostName) {
 	// HTML Head with CSS
 	const htmlHead = `
     <head>
-        <title>EDtunnel: VLESS configuration</title>
-        <meta name="description" content="This is a tool for generating VLESS protocol configurations. Give us a star on GitHub https://github.com/3Kmfi6HP/EDtunnel if you found it useful!">
-		<meta name="keywords" content="EDtunnel, cloudflare pages, cloudflare worker, severless">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-		<meta property="og:site_name" content="EDtunnel: VLESS configuration" />
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content="EDtunnel - VLESS configuration and subscribe output" />
-        <meta property="og:description" content="Use cloudflare pages and worker severless to implement vless protocol" />
-        <meta property="og:url" content="https://${hostName}/" />
-        <meta property="og:image" content="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(`vless://${userIDs.split(',')[0]}@${hostName}${commonUrlPart}`)}" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="EDtunnel - VLESS configuration and subscribe output" />
-        <meta name="twitter:description" content="Use cloudflare pages and worker severless to implement vless protocol" />
-        <meta name="twitter:url" content="https://${hostName}/" />
-        <meta name="twitter:image" content="https://cloudflare-ipfs.com/ipfs/bafybeigd6i5aavwpr6wvnwuyayklq3omonggta4x2q7kpmgafj357nkcky" />
-        <meta property="og:image:width" content="1500" />
-        <meta property="og:image:height" content="1500" />
+        <title>EDless: VLESS configuration</title>
 
         <style>
         body {
@@ -802,24 +772,24 @@ function createVLESSSub(userID_Path, hostName) {
 		if (!hostName.includes('pages.dev')) {
 			// Iterate over all ports for http
 			portArray_http.forEach((port) => {
-				const commonUrlPart_http = `:${port}?encryption=none&security=none&fp=random&type=ws&host=${hostName}&path=%2F%3Fed%3D2048#HTTP-${hostName}-${port}`;
+				const commonUrlPart_http = `:${port}?encryption=none&security=none&fp=random&type=ws&host=${hostName}&path=%2F%3Fed%3D2048#${hostName}:${port}`;
 				const vlessMainHttp = `vless://${userID}@${hostName}${commonUrlPart_http}`;
                 output.push(`${vlessMainHttp}`);
 				// For each proxy IP, generate a VLESS configuration and add to output
 				cloudflareIPs.forEach((proxyIP) => {
-					const vlessSecHttp = `vless://${userID}@${proxyIP}:${port}?encryption=none&security=none&fp=random&type=ws&host=${hostName}&path=%2F%3Fed%3D2048#HTTP-${proxyIP}-${port}`;
+					const vlessSecHttp = `vless://${userID}@${proxyIP}:${port}?encryption=none&security=none&fp=random&type=ws&host=${hostName}&path=%2F%3Fed%3D2048#${proxyIP}:${port}`;
 					output.push(`${vlessSecHttp}`);
 				});
 			});
 		}
 		// Iterate over all ports for https
 		portArray_https.forEach((port) => {
-			const commonUrlPart_https = `:${port}?encryption=none&security=tls&sni=${hostName}&fp=random&type=ws&host=${hostName}&path=%2F%3Fed%3D2048#HTTPS-${hostName}-${port}`;
+			const commonUrlPart_https = `:${port}?encryption=none&security=tls&sni=${hostName}&fp=random&type=ws&host=${hostName}&path=%2F%3Fed%3D2048#${hostName}:${port}`;
 			const vlessMainHttps = `vless://${userID}@${hostName}${commonUrlPart_https}`;
             output.push(`${vlessMainHttps}`);
 			// For each proxy IP, generate a VLESS configuration and add to output
 			cloudflareIPs.forEach((proxyIP) => {
-				const vlessSecHttps = `vless://${userID}@${proxyIP}:${port}?encryption=none&security=tls&sni=${hostName}&fp=random&type=ws&host=${hostName}&path=%2F%3Fed%3D2048#HTTPS-${proxyIP}-${port}`;
+				const vlessSecHttps = `vless://${userID}@${proxyIP}:${port}?encryption=none&security=tls&sni=${hostName}&fp=random&type=ws&host=${hostName}&path=%2F%3Fed%3D2048#${proxyIP}:${port}`;
 				output.push(`${vlessSecHttps}`);
 			});
 		});
