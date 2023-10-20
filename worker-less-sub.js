@@ -677,9 +677,9 @@ function getVLESSConfig(userIDs, hostName) {
 	// Prepare output array
 	let output = [];
 	let header = [];
-	const clash_link = `https://subconverter.do.xn--b6gac.eu.org/sub?target=clash&url=https://${hostName}/sub/${userIDArray[0]}?format=clash&insert=false&emoji=true&list=false&tfo=false&scv=true&fdn=false&sort=false&new_name=true`;
-	header.push(`\n<p align="center"><img src="https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(`vless://${userIDs.split(',')[0]}@${hostName}${commonUrlPart}`)}" alt="vless链接" style="margin-bottom: -50px;"></p>\n\n`);
-	header.push(`<p align="center"><a href="//${hostName}/sub/${userIDArray[0]}" target="_blank">VLESS 节点订阅连接</a>\n\n<a href="clash://install-config?url=${encodeURIComponent(clash_link)}" target="_blank">Clash 节点订阅连接</a>\n\n<a href="${clash_link}" target="_blank">Clash 节点订阅连接2</a></p>\n`);
+	const clash_link = `https://${hostName}/sub/${userIDArray[0]}?format=clash`;
+	header.push(`\n<p align="center"><img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`vless://${userIDs.split(',')[0]}@${hostName}${commonUrlPart}`)}" alt="vless链接" style="margin-bottom: -50px;"></p>\n\n`);
+	header.push(`<p align="center"><a href="//${hostName}/sub/${userIDArray[0]}" target="_blank">VLESS 节点订阅连接</a>\n\n<a href="${clash_link}" target="_blank">Clash 节点订阅连接</a></p>\n`);
 
 	// Generate output string for each userID
 	userIDArray.forEach((userID) => {
