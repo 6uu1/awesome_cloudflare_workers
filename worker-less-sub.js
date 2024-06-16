@@ -8,10 +8,19 @@ let proxyIP = 'edgetunnel.anycast.eu.org';
 
 let dohURL = 'https://cloudflare-dns.com/dns-query'; // or https://dns.google/dns-query
 
-let cloudflareIPs = ['cdn.jsbang.top','cdn.didi8.com','opop.200307.xyz','443.ct.bestl.de','80.ct.bestl.de',
-                     'cdn.anycast.eu.org','10000.king360.eu.org','10086.king360.eu.org','rb-3.cfsaas.ltd',
-                     'cn-cdn.ljy2345.com','cf.gzgrd.com','cdn.aoop1994.eu.org','sp.coinminer.cf','sp.kunta.link',
-                     'ip.woao.xyz','a2.hh.887733.xyz'];
+let cloudflareIPs = ["ip.sb",
+                     "cdn.didi8.com",
+                     "www.digitalocean.com",
+                     "fbi.gov",
+                     "www.visa.com",
+                     "www.wto.org",
+                     "www.visa.com.tw",
+                     "www.visa.com.sg",
+                     "whatismyipaddress.com",
+                     "download.yunzhongzhuan.com",
+                     "www.okcupid.com",
+                     "www.pcmag.com",
+                     "japan.com"];
 
 if (!isValidUUID(userID)) {
 	throw new Error('uuid is invalid');
