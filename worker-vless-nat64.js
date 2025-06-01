@@ -1,4 +1,3 @@
-// worker-vless-nat64.js
 import { connect } from 'cloudflare:sockets';
 
 // WebSocket 状态常量
@@ -94,7 +93,22 @@ async function handleVLESSWebSocket(request, userID) {
         throw new Error('UDP 代理仅支持 DNS (端口 53)');
       }
 
-      remoteSocket = await establishTcpConnection(result, rawClientData, serverWS, vlessRespHeader);
+      // 优先尝试直接连接
+      try {
+        remoteSocket = await connectDirectly(result.addressRemote, result.portRemote, rawClientData);
+        pipeRemoteToWebSocket(remoteSocket, serverWS, vlessRespHeader);
+      } catch (err) {
+        console.error('直接连接失败:', err);
+        // 直接连接失败，尝试使用 NAT64 IPv6
+        try {
+          const nat64IPv6 = await getNAT64IPv6(result.addressRemote);
+          remoteSocket = await connectDirectly(nat64IPv6, result.portRemote, rawClientData);
+          pipeRemoteToWebSocket(remoteSocket, serverWS, vlessRespHeader);
+        } catch (natErr) {
+          console.error('NAT64 连接失败:', natErr);
+          throw new Error('无法连接到目标地址');
+        }
+      }
     },
     close() {
       closeSocket(remoteSocket);
@@ -200,30 +214,29 @@ function parseVLESSHeader(buffer, userID) {
   };
 }
 
-// 建立 TCP 连接
-async function establishTcpConnection(result, rawClientData, serverWS, vlessRespHeader) {
-  const ipv4Regex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
-  let proxyIP = result.addressRemote;
-
-  if (ipv4Regex.test(result.addressRemote)) {
-    proxyIP = convertToNAT64IPv6(result.addressRemote);
-    console.log(`IPv4 转换为 NAT64 IPv6: ${proxyIP}`);
-  } else if (!result.addressRemote.includes(':')) { // 域名
-    proxyIP = await resolveDomainToNAT64IPv6(result.addressRemote);
-    console.log(`域名解析为 NAT64 IPv6: ${proxyIP}`);
-  }
-
+// 直接连接目标地址
+async function connectDirectly(address, port, rawClientData) {
   const tcpSocket = await connect({
-    hostname: proxyIP,
-    port: result.portRemote,
+    hostname: address,
+    port: port,
   });
-
   const writer = tcpSocket.writable.getWriter();
   await writer.write(rawClientData);
   writer.releaseLock();
-
-  pipeRemoteToWebSocket(tcpSocket, serverWS, vlessRespHeader);
   return tcpSocket;
+}
+
+// 获取 NAT64 IPv6 地址
+async function getNAT64IPv6(address) {
+  const ipv4Regex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+  if (ipv4Regex.test(address)) {
+    return convertToNAT64IPv6(address);
+  } else if (!address.includes(':')) { // 域名
+    const ipv4 = await resolveDomainToIPv4(address);
+    return convertToNAT64IPv6(ipv4);
+  } else {
+    throw new Error('不支持的地址类型');
+  }
 }
 
 // 将 IPv4 转换为 NAT64 IPv6
@@ -232,29 +245,25 @@ function convertToNAT64IPv6(ipv4Address) {
   if (parts.length !== 4 || parts.some(p => parseInt(p) > 255 || parseInt(p) < 0)) {
     throw new Error('无效的 IPv4 地址');
   }
-
   const hex = parts.map(p => parseInt(p).toString(16).padStart(2, '0'));
-  return `[2001:67c:2960:6464::${hex[0]}${hex[1]}:${hex[2]}${hex[3]}]`;
+  return `2001:67c:2960:6464::${hex[0]}${hex[1]}:${hex[2]}${hex[3]}`;
 }
 
-// 域名解析为 NAT64 IPv6
-async function resolveDomainToNAT64IPv6(domain) {
+// 域名解析为 IPv4
+async function resolveDomainToIPv4(domain) {
   if (dnsCache.has(domain)) {
     return dnsCache.get(domain);
   }
-
   const dnsQuery = await fetch(`https://1.1.1.1/dns-query?name=${domain}&type=A`, {
     headers: { 'Accept': 'application/dns-json' },
   });
   const dnsResult = await dnsQuery.json();
-
   if (dnsResult.Answer && dnsResult.Answer.length > 0) {
     const aRecord = dnsResult.Answer.find(record => record.type === 1);
     if (aRecord) {
       const ipv4Address = aRecord.data;
-      const nat64IPv6 = convertToNAT64IPv6(ipv4Address);
-      dnsCache.set(domain, nat64IPv6); // 缓存结果
-      return nat64IPv6;
+      dnsCache.set(domain, ipv4Address);
+      return ipv4Address;
     }
   }
   throw new Error(`无法解析域名 ${domain} 的 IPv4 地址`);
