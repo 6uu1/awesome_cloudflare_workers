@@ -6,7 +6,7 @@ import { connect } from 'cloudflare:sockets';
 // [Windows] Press "Win + R", input cmd and run:  Powershell -NoExit -Command "[guid]::NewGuid()"
 let userID = 'd342d11e-d424-4583-b36e-524ab1f0afa4';
 
-const NAT64_PREFIX = '2001:67c:2960:6464::';
+const NAT64_PREFIX = '2602:fc59:b0:64::'; // https://nat64.xyz
 
 
 if (!isValidUUID(userID)) {
