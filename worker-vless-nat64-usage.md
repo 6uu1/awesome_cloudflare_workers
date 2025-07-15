@@ -14,7 +14,7 @@
 - **🧠 智能 NAT64 回退**：无需手动配置备用 IP，在直连失败时自动通过 NAT64 生成动态代理地址。
 - **⚙️ 零配置代理IP**：您不再需要寻找和维护一个静态的 `PROXYIP` 环境变量。
 - **🌍 免费部署**：可以完全部署在 Cloudflare Pages 的免费套餐上。
-- **✏️ 参数可定制**：您可以轻松修改脚本中的 `userID` 和 `NAT64_PREFIX`。
+- **✏️ 参数可定制**：您可以轻松修改脚本中的 `userID` 和 `NAT64_PREFIX`，或则通过环境变量设置 `UUID` 和 `NAT64_PREFIX`。
 
 ## 生成方法
 
@@ -51,7 +51,7 @@ patch worker-vless.js < vless-nat64.patch
 // [Windows] Press "Win + R", input cmd and run:  Powershell -NoExit -Command "[guid]::NewGuid()"
 let userID = 'd342d11e-d424-4583-b36e-524ab1f0afa4'; // <-- 修改为你自己的 UUID
 
-const NAT64_PREFIX = '2001:67c:2960:6464::'; // <-- 公共NAT64前缀
+let NAT64_PREFIX = '2602:fc59:b0:64::'; // <-- 公共NAT64前缀
 // ...
 ```
 
@@ -71,6 +71,7 @@ mv worker-vless.js _worker.js
 4.  给你的项目起一个名字，例如 `my-vless-proxy`。
 5.  将你本地的 `_worker.js` 文件**直接拖拽**到上传区域。
 6.  点击 **Deploy site**。
+7.  （可选）配置环境变量 `UUID` 和 `NAT64_PREFIX`，然后重试部署使环境变量生效。
 
 部署完成后，Cloudflare 会提供给你一个 `*.pages.dev` 的域名。现在，你的 VLESS + NAT64 代理服务已经全球在线了！
 

@@ -6,7 +6,7 @@ import { connect } from 'cloudflare:sockets';
 // [Windows] Press "Win + R", input cmd and run:  Powershell -NoExit -Command "[guid]::NewGuid()"
 let userID = 'd342d11e-d424-4583-b36e-524ab1f0afa4';
 
-const NAT64_PREFIX = '2602:fc59:b0:64::'; // https://nat64.xyz
+let NAT64_PREFIX = '2602:fc59:b0:64::'; // https://nat64.xyz
 
 
 if (!isValidUUID(userID)) {
@@ -23,6 +23,7 @@ export default {
 	async fetch(request, env, ctx) {
 		try {
 			userID = env.UUID || userID;
+			NAT64_PREFIX = env.NAT64_PREFIX || NAT64_PREFIX;
 			const upgradeHeader = request.headers.get('Upgrade');
 			if (!upgradeHeader || upgradeHeader !== 'websocket') {
 				const url = new URL(request.url);

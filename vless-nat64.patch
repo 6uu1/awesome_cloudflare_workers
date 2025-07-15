@@ -5,19 +5,20 @@
  let userID = 'd342d11e-d424-4583-b36e-524ab1f0afa4';
  
 -let proxyIP = '';
-+const NAT64_PREFIX = '2602:fc59:b0:64::'; // https://nat64.xyz
++let NAT64_PREFIX = '2602:fc59:b0:64::'; // https://nat64.xyz
  
  
  if (!isValidUUID(userID)) {
-@@ -23,7 +23,6 @@
+@@ -23,7 +23,7 @@
  	async fetch(request, env, ctx) {
  		try {
  			userID = env.UUID || userID;
 -			proxyIP = env.PROXYIP || proxyIP;
++			NAT64_PREFIX = env.NAT64_PREFIX || NAT64_PREFIX;
  			const upgradeHeader = request.headers.get('Upgrade');
  			if (!upgradeHeader || upgradeHeader !== 'websocket') {
  				const url = new URL(request.url);
-@@ -184,14 +183,22 @@
+@@ -184,14 +184,22 @@
  
  	// if the cf connect tcp socket have no incoming data, we retry to redirect ip
  	async function retry() {
@@ -48,7 +49,7 @@
  	}
  
  	const tcpSocket = await connectAndWrite(addressRemote, portRemote);
-@@ -633,4 +640,60 @@
+@@ -633,4 +641,60 @@
  ################################################################
  `;
  }
