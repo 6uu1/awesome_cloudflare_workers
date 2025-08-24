@@ -1,0 +1,37 @@
+--- worker-with-socks5-experimental.js
++++ worker-vless-with-socks5-over-websocket.min.js
+ 
+ if (!isValidUUID(userID)) {
+ 	throw new Error('uuid is not valid');
+@@ -599,10 +599,25 @@
+  */
+ async function socks5Connect(addressType, addressRemote, portRemote, log) {
+ 	const { username, password, hostname, port } = parsedSocks5Address;
+-	// Connect to the SOCKS server
+-	const socket = connect({
+-		hostname,
+-		port,
+-	});
++	
++	// Connect to SOCKS5 over WebSocket server
++	const ws = new WebSocket(`wss://${hostname}:${port}/ws`);
++	await new Promise((resolve, reject) => {
++		ws.addEventListener('open', resolve);
++		ws.addEventListener('error', reject);
++	});
++	
++	// Create socket-compatible object
++	const socket = {
++		readable: new ReadableStream({
++			start(controller) {
++				ws.addEventListener('message', (event) => {
++					controller.enqueue(new Uint8Array(event.data));
++				});
++				ws.addEventListener('close', () => controller.close());
++			}
++		}),
++		writable: new WritableStream({ write(chunk) { ws.send(chunk); } }),
++		closed: new Promise(resolve => ws.addEventListener('close', resolve))
++	};
+ 
+ 	// Request head format (Worker -> Socks Server):

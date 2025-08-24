@@ -10,6 +10,7 @@
     - [1. 文件下载代理 (worker-dl)](#1-文件下载代理-worker-dl)
     - [2. 反向代理 (worker-reverse-proxy)](#2-反向代理-worker-reverse-proxy)
     - [3. VLESS + NAT64 代理 (worker-vless-nat64)](#3-vless--nat64-代理-worker-vless-nat64)
+    - [4. VLESS + SOCKS5 over WebSocket 代理 (worker-vless-with-socks5-over-websocket)](#4-vless--socks5-over-websocket-代理-worker-vless-with-socks5-over-websocket)
   - [通用部署步骤](#通用部署步骤)
 
 ## 包含的 Workers
@@ -70,6 +71,32 @@ export default {
 
 有关如何生成 UUID、参数定制和客户端配置的完整指南，请务必阅读：
 ➡️ **[worker-vless-nat64 使用指南](./worker-vless-nat64-usage.md)**
+
+### 4. VLESS + SOCKS5 over WebSocket 代理 (worker-vless-with-socks5-over-websocket)
+
+一个增强版的 Cloudflare Worker VLESS 代理脚本，核心功能是将传统的 SOCKS5 代理替换为 SOCKS5 over WebSocket，使代理服务器可以部署在 PaaS 平台上。
+
+**核心特性**
+
+- **SOCKS5 over WebSocket**：将 SOCKS5 协议封装在 WebSocket 中，解决 PaaS 平台不支持原生 SOCKS5 流量的问题
+- **智能回退机制**：首先尝试直接连接目标服务器，直连失败时通过 SOCKS5 over WebSocket 代理进行中转
+- **两种实现方案**：提供极简版本（25行代码）和完整版本（120行代码），满足不同需求
+
+**配置要求**
+
+在使用前，您 **必须** 配置 SOCKS5 over WebSocket 代理地址：
+
+```javascript
+// SOCKS5 over WebSocket address
+// Format: user:pass@host:port or host:port
+// Will connect via wss:// (secure WebSocket) to the host:port
+let socks5Address = 'name:pass@example.com:443';
+```
+
+**详细用法和配置**
+
+有关部署步骤、配置说明和技术实现的完整指南，请务必阅读：
+➡️ **[worker-vless-with-socks5-over-websocket 使用指南](./worker-vless-with-socks5-over-websocket.md)**
 
 ## 通用部署步骤
 

@@ -1,0 +1,211 @@
+--- worker-with-socks5-experimental.js
++++ worker-vless-with-socks5-over-websocket.js
+@@ -4,14 +4,15 @@
+ 
+ // How to generate your own UUID:
+ // [Windows] Press "Win + R", input cmd and run:  Powershell -NoExit -Command "[guid]::NewGuid()"
+-let userID = 'd342d11e-d424-4583-b36e-524ab1f0afa4';
++let userID = 'a6a45391-31fe-4bdd-828c-51f02c943dce';
+ 
+ let proxyIP = '';
+ 
+-// The user name and password do not contain special characters
++// SOCKS5 over WebSocket address
+ // Setting the address will ignore proxyIP
+-// Example:  user:pass@host:port  or  host:port
+-let socks5Address = '';
++// Format: user:pass@host:port or host:port
++// Will connect via wss:// (secure WebSocket) to the host:port
++let socks5Address = 'name:pass@example.com:443';
+ 
+ if (!isValidUUID(userID)) {
+ 	throw new Error('uuid is not valid');
+@@ -591,7 +592,95 @@
+ }
+ 
+ /**
+- * 
++ * 创建 WebSocket 到 Socket 适配器
++ * @param {WebSocket} webSocket
++ * @param {function} log
++ * @returns {Object} 具有 readable, writable, closed 属性的对象
++ */
++function createWebSocketAdapter(webSocket, log) {
++	// 创建 readable stream 来接收 WebSocket 消息
++	const readable = new ReadableStream({
++		start(controller) {
++
++			webSocket.addEventListener('message', (event) => {
++				try {
++					// 处理不同类型的 WebSocket 数据
++					let data;
++					if (event.data instanceof ArrayBuffer) {
++						data = new Uint8Array(event.data);
++					} else if (event.data instanceof Uint8Array) {
++						data = event.data;
++					} else if (typeof event.data === 'string') {
++						// 如果是字符串，转换为 Uint8Array
++						data = new TextEncoder().encode(event.data);
++					} else {
++						log(`Unexpected WebSocket data type: ${typeof event.data}`);
++						return;
++					}
++
++					controller.enqueue(data);
++				} catch (error) {
++					log(`WebSocket message error: ${error}`);
++					controller.error(error);
++				}
++			});
++
++			webSocket.addEventListener('close', () => {
++				log('WebSocket readable stream closed');
++				controller.close();
++			});
++
++			webSocket.addEventListener('error', (error) => {
++				log(`WebSocket readable stream error: ${error}`);
++				controller.error(error);
++			});
++		}
++	});
++
++	// 创建 writable stream 来发送 WebSocket 消息
++	const writable = new WritableStream({
++		async write(chunk) {
++			try {
++				// 确保 WebSocket 处于 OPEN 状态
++				if (webSocket.readyState !== WebSocket.OPEN) {
++					throw new Error(`WebSocket not open, readyState: ${webSocket.readyState}`);
++				}
++
++				webSocket.send(chunk);
++				log(`WebSocket sent ${chunk.length} bytes`);
++			} catch (error) {
++				log(`WebSocket send error: ${error}`);
++				throw error;
++			}
++		},
++		close() {
++			log('Writable stream closed, closing WebSocket');
++			if (webSocket.readyState === WebSocket.OPEN) {
++				webSocket.close();
++			}
++		},
++		abort(reason) {
++			log(`Writable stream aborted: ${reason}`);
++			if (webSocket.readyState === WebSocket.OPEN) {
++				webSocket.close();
++			}
++		}
++	});
++
++	// 创建 closed promise
++	const closed = new Promise((resolve) => {
++		webSocket.addEventListener('close', resolve);
++	});
++
++	return {
++		readable,
++		writable,
++		closed
++	};
++}
++
++/**
++ *
+  * @param {number} addressType
+  * @param {string} addressRemote
+  * @param {number} portRemote
+@@ -599,11 +688,56 @@
+  */
+ async function socks5Connect(addressType, addressRemote, portRemote, log) {
+ 	const { username, password, hostname, port } = parsedSocks5Address;
+-	// Connect to the SOCKS server
+-	const socket = connect({
+-		hostname,
+-		port,
+-	});
++
++	// 构造 WebSocket URL - 使用 wss:// 因为 PaaS 平台提供 HTTPS 服务
++	// gost 默认的 WebSocket 路径是 "/ws"，不是根路径 "/"
++	const wsUrl = `wss://${hostname}:${port}/ws`;
++	log(`connecting to SOCKS5 over WebSocket: ${wsUrl}`);
++
++	let socket;
++	let wsAdapter;
++
++	try {
++		log(`attempting WebSocket connection to: ${wsUrl}`);
++
++		// 使用 new WebSocket() 构造函数 - 这是 Cloudflare Workers 官方支持的方式
++		socket = new WebSocket(wsUrl);
++
++		// 等待 WebSocket 连接建立
++		await new Promise((resolve, reject) => {
++			const timeout = setTimeout(() => {
++				reject(new Error('WebSocket connection timeout'));
++			}, 10000); // 10秒超时
++
++			socket.addEventListener('open', () => {
++				clearTimeout(timeout);
++				log('WebSocket connection opened successfully');
++				resolve();
++			});
++
++			socket.addEventListener('error', (event) => {
++				clearTimeout(timeout);
++				log(`WebSocket connection error: ${JSON.stringify(event)}`);
++				reject(new Error(`WebSocket connection failed: ${event.message || 'Unknown error'}`));
++			});
++		});
++
++		// 添加其他事件监听器来调试连接状态
++		socket.addEventListener('close', (event) => {
++			log(`WebSocket closed: code=${event.code}, reason=${event.reason}`);
++		});
++
++		socket.addEventListener('message', (event) => {
++			log(`WebSocket received message: ${event.data.length} bytes`);
++		});
++
++		// 创建 WebSocket 到 Socket 适配器
++		wsAdapter = createWebSocketAdapter(socket, log);
++
++	} catch (error) {
++		log(`Failed to establish WebSocket connection: ${error.message}`);
++		throw error;
++	}
+ 
+ 	// Request head format (Worker -> Socks Server):
+ 	// +----+----------+----------+
+@@ -618,12 +752,12 @@
+ 	// 0x02 USERNAME/PASSWORD https://datatracker.ietf.org/doc/html/rfc1929
+ 	const socksGreeting = new Uint8Array([5, 2, 0, 2]);
+ 
+-	const writer = socket.writable.getWriter();
++	const writer = wsAdapter.writable.getWriter();
+ 
+ 	await writer.write(socksGreeting);
+ 	log('sent socks greeting');
+ 
+-	const reader = socket.readable.getReader();
++	const reader = wsAdapter.readable.getReader();
+ 	const encoder = new TextEncoder();
+ 	let res = (await reader.read()).value;
+ 	// Response format (Socks Server -> Worker):
+@@ -726,12 +860,12 @@
+ 	}
+ 	writer.releaseLock();
+ 	reader.releaseLock();
+-	return socket;
++	return wsAdapter;
+ }
+ 
+ 
+ /**
+- * 
++ *
+  * @param {string} address
+  */
+ function socks5AddressParser(address) {
